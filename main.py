@@ -1,13 +1,12 @@
-import boto3
+# for local dev / test 
 import numpy as np
 import pandas as pd
 from washtimer import porssisahko as pool
 from washtimer.consumption import min_max_hours
 from washtimer.page_html import get_page_html
-import os
 
 
-def lambda_handler(event, context):
+def main():
 
     # calculate cheapest hours
 
@@ -22,18 +21,9 @@ def lambda_handler(event, context):
     # format html page
 
     html_content = get_page_html(begin_hours, end_hours)
-    
-    # Specify the S3 bucket name and object key
-    bucket_name = os.getenv("BUCKET_NAME")
-    object_key = 'index.html'
 
-    # Initialize S3 client
-    s3 = boto3.client('s3')
+    print(html_content)
 
-    # Upload the HTML content as a file to S3
-    s3.put_object(Bucket=bucket_name, Key=object_key, Body=html_content, ContentType='text/html')
+if __name__=="__main__":
 
-    return {
-        'statusCode': 200,
-        'body': 'Page update completed'
-    }
+    main()

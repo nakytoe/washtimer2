@@ -2,6 +2,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
+
 def uniform_consumption_kernel(hours:float,
                             minutes:float = 0,
                             account_for_current_time = False)->np.array:
@@ -52,9 +53,9 @@ def calculate_consumption(energy_prices:pd.DataFrame,
     valid_hours = mean_price.shape[0]
     start_time = energy_prices.startDate.iloc[:valid_hours]
 
-    def get_hourdelta(time_then: str, time_now: str)->str:
+    def get_hourdelta(time_then: str, dt_now: dt.datetime)->str:
         fmt = "%Y-%m-%dT%H:%M:%S.000Z"
-        time_d =  dt.datetime.strptime(time_then, fmt) - dt.datetime.strptime(time_now, fmt)
+        time_d =  dt.datetime.strptime(time_then, fmt) - dt_now
         return time_d.seconds//3600
         
     hours_to_start = start_time.apply(get_hourdelta, args = [dt.datetime.now()])
@@ -72,7 +73,8 @@ def min_max_hours(energy_prices: pd.DataFrame,
                 power_hours = [1, 2, 3, 4],
                 account_for_current_time:bool = False,
                 kernel_function = uniform_consumption_kernel,
-                drop_past: bool = True)->pd.DataFrame:
+                drop_past: bool = True,
+                )->pd.DataFrame:
     
     """
     Evaluate the cheapest and most expensive hours to time appliance programs
@@ -81,8 +83,8 @@ def min_max_hours(energy_prices: pd.DataFrame,
 
     min_max_df = pd.DataFrame(columns={"mean_price":float,
                        "power_hours":float,
-                       "start_time":int,
-                       "end_time":int,
+                       "hours_to_start":int,
+                       "hours_to_end":int,
                        "minmax":str})
     
     min_max_df["minmax"] = np.nan
@@ -102,7 +104,7 @@ def min_max_hours(energy_prices: pd.DataFrame,
     # calculate consumptions for appliance programs of given lengths
     for hours in power_hours:
         mean_price = calculate_consumption(energy_prices,
-                            hours, 
+                            hours,
                             account_for_current_time=account_for_current_time,
                             kernel_function = kernel_function)
         
