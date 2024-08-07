@@ -53,19 +53,31 @@ def calculate_consumption(energy_prices:pd.DataFrame,
     valid_hours = mean_price.shape[0]
     start_time = energy_prices.startDate.iloc[:valid_hours]
 
-    def get_hourdelta(time_then: str, dt_now: dt.datetime)->str:
-        fmt = "%Y-%m-%dT%H:%M:%S.000Z"
-        time_d =  dt.datetime.strptime(time_then, fmt) - dt_now
-        return time_d.seconds//3600
-        
-    hours_to_start = start_time.apply(get_hourdelta, args = [dt.datetime.now()])
+    now = dt.datetime.now()
 
-    hours_to_end = hours_to_start + hours
+    def add_time(time_str: str, time_to_add:dt.timedelta)->str:
+        fmt = "%Y-%m-%dT%H:%M:%S.000Z"
+        t = dt.datetime.strptime(time_str, fmt)
+        new_t = t + time_to_add
+        return dt.datetime.strftime(new_t, fmt)
+        
+    if account_for_current_time:
+        start_time = start_time.apply(add_time, args = [dt.timedelta(minutes = now.minute)])
+
+    end_time = start_time.apply(add_time, args = [dt.timedelta(hours = hours)])
+
+    def hours_until(time_str: str)->int:
+        fmt = "%Y-%m-%dT%H:%M:%S.000Z"
+        t = dt.datetime.strptime(time_str, fmt)
+        return (t - now + dt.timedelta(hours=1)).seconds//3600
+
+    hours_to_start = start_time.apply(hours_until)
+    hours_to_end = end_time.apply(hours_until)
 
     df = pd.DataFrame({"mean_price":mean_price,
                        "power_hours":hours,
                        "hours_to_start":hours_to_start,
-                       "hours_to_end":hours_to_end})
+                       "hours_to_end": hours_to_end})
     
     return df
 
@@ -90,16 +102,19 @@ def min_max_hours(energy_prices: pd.DataFrame,
     min_max_df["minmax"] = np.nan
 
     def is_future(time_str: str)->str:
+        """
+        check if a timestamp is less than one hour in the past
+        """
         fmt = "%Y-%m-%dT%H:%M:%S.000Z"
         t = dt.datetime.strptime(time_str, fmt)
         now = dt.datetime.now()
-        return t > now
+        return now < t + dt.timedelta(hours = 1)
     
     if drop_past:
         energy_prices = energy_prices[energy_prices.startDate.apply(is_future)]
 
-    # only keep up to next 12 hours
-    energy_prices = energy_prices.iloc[:min(12, energy_prices.shape[0])]
+    # only keep up to next 12 hours (prices listed in descending order by time)
+    energy_prices = energy_prices.tail(12)
     
     # calculate consumptions for appliance programs of given lengths
     for hours in power_hours:
@@ -116,5 +131,5 @@ def min_max_hours(energy_prices: pd.DataFrame,
 
         min_max_df.loc[min_max_df.shape[0]] = cheapest
         min_max_df.loc[min_max_df.shape[0]] = expensive
-        
+    
     return min_max_df
