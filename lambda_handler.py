@@ -31,7 +31,12 @@ def lambda_handler(event, context):
     s3 = boto3.client('s3')
 
     # Upload the HTML content as a file to S3
-    s3.put_object(Bucket=bucket_name, Key=object_key, Body=html_content, ContentType='text/html')
+    s3.put_object(Bucket=bucket_name,
+                  Key=object_key,
+                  Body=html_content,
+                  ContentType='text/html',
+                  Metadata={'Cache-Control': 'max-age=60'}
+                )
 
     return {
         'statusCode': 200,
