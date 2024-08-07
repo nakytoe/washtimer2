@@ -12,6 +12,8 @@ Assumptions:
  - in a long run start times average to half past given hour
 
 
-Web page updated hourly on [washtimer.fi](https://www.washtimer.fi/)
+Web page updated hourly on [www.washtimer.fi](https://www.washtimer.fi/)
 
 Infra: S3 & AWS Lambda
+
+Electricity prices from [porssisahko.net](https://porssisahko.net/api) open api.
