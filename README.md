@@ -12,6 +12,6 @@ Assumptions:
  - in a long run start times average to half past given hour
 
 
-Web page updated hourly on http://washtimer.s3-website.eu-north-1.amazonaws.com/index.html
+Web page updated hourly on [washtimer.fi](https://www.washtimer.fi/)
 
 Infra: S3 & AWS Lambda
