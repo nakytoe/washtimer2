@@ -35,7 +35,7 @@ def lambda_handler(event, context):
                   Key=object_key,
                   Body=html_content,
                   ContentType='text/html',
-                  Metadata={'Cache-Control': 'max-age=60'}
+                  CacheControl = 'max-age=60'
                 )
 
     return {
