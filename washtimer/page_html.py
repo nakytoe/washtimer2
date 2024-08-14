@@ -1,3 +1,7 @@
+import datetime as dt
+import pytz
+
+TIMEZONE = "Europe/Helsinki"
 
 PAGE_HTML = """
 <!DOCTYPE html>
@@ -60,6 +64,7 @@ PAGE_HTML = """
  </div>
  <p class="description">for the cheapest wash in the next 12 hours.</p>
  <footer>
+   <p>Page last updated [timestamp]</p>
    <p>WashTimer by Nuutti Kytö, 2024</p>
    <p><a href="https://github.com/nakytoe/washtimer2">Source Code on GitHub</a></p>
  </footer>
@@ -67,6 +72,14 @@ PAGE_HTML = """
 </html>
 """
 
+def get_timestamp()->str:
+    tz = pytz.timezone(TIMEZONE)
+    timestamp = dt.datetime.now(tz).strftime('%d.%m.%Y %H:%M')
+    return timestamp
+
 def get_page_html(begin_hours:int, end_hours:int)->str:
-    return PAGE_HTML.replace("[begin_hours]", str(begin_hours)).replace("[end_hours]", str(end_hours))
+    return (PAGE_HTML
+            .replace("[begin_hours]", str(begin_hours))
+            .replace("[end_hours]", str(end_hours))
+            .replace("[timestamp]", get_timestamp()))
 
