@@ -11,6 +11,12 @@ Assumptions:
  - machine has uniform consumption curve
  - in a long run start times average to half past given hour
 
+Application logic:
+ - CloudWatch hourly trigger
+ - Lambda, python script
+ - Results updated to another github repo
+ - Github pages
+ - switched from S3 website back to GitHub pages since aws does not offer consumer-friendly ddos protection for hobby projects like this
 
 Web page updated hourly on [www.washtimer.fi](https://www.washtimer.fi/)
 
