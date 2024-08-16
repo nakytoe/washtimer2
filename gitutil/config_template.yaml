@@ -1,0 +1,9 @@
+repo_url: 'https://github.com/username/repository.git'
+clone_dir: './repository'
+file_path: 'path/to/file.txt'
+repo_owner: 'username'
+repo_name: 'repository'
+commit_message: 'update index.html'
+user_name: 'YourName'
+user_email: 'yourname@example.com'
+reset_head: 'HARD'  # Set this to 'HARD' to overwrite the last commit
