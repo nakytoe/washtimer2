@@ -1,13 +1,15 @@
-# dev environment
+# replicate aws lambda environment
 
-FROM python:3.11.4-bullseye
+FROM amazonlinux:2023
+
+RUN dnf install -y git pip python3.11
 
 USER root
 RUN mkdir /app
 COPY . /app
 WORKDIR /app
 
-RUN python -m pip install numpy pandas requests
+RUN pip install -r requirements.txt
 
 ENV PYTHONPATH /app
 
