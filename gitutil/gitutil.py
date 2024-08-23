@@ -1,59 +1,62 @@
+from pathlib import Path
 import subprocess
 import os
 import yaml
 
-def clone_repo(repo_url, clone_dir, github_token, user_name, repo_owner, repo_name):
-    auth_repo_url = repo_url.replace('https://', f'https://{user_name}:{github_token}@')
-    subprocess.run(['git', 'clone', auth_repo_url, clone_dir], check=True)
+class RepoUtil():
+    """
+    Wrapper for simple git repository functions
+    """
 
-def git_add_commit_push(file_path, commit_message, repo_dir, github_token, user_name, user_email, repo_owner, repo_name, reset_head):
-    # Setup user configuration
-    subprocess.run(['git', 'config', 'user.name', user_name], cwd=repo_dir, check=True)
-    subprocess.run(['git', 'config', 'user.email', user_email], cwd=repo_dir, check=True)
+    def __init__(self, config_path:str):
+        with open(Path(config_path), 'r') as file:
+            config = yaml.safe_load(file)
+
+        self.repo_url = config['repo_url']
+        self.clone_dir = config['clone_dir']
+        self.repo_owner = config['repo_owner']
+        self.repo_name = config['repo_name']
+        self.commit_message = config['commit_message']
+        self.user_name = config['user_name']
+        self.user_email = config['user_email']
+        self.reset_head = config.get('reset_head', None)
+
+        subprocess.run(['git', 'config', 'user.name', self.user_name], cwd=self.repo_dir, check=True)
+        subprocess.run(['git', 'config', 'user.email', self.user_email], cwd=self.repo_dir, check=True)
     
-    # Add the file
-    subprocess.run(['git', 'add', file_path], cwd=repo_dir, check=True)
+    @staticmethod
+    def get_github_token():
+        github_token = os.getenv('GITHUB_TOKEN')
+        if not github_token:
+            raise ValueError("GitHub token is not set in environment variables.")
+        return github_token
+
+    def clone(self):
+        auth_repo_url = self.repo_url.replace('https://', f'https://{self.user_name}:{self.get_github_token()}@')
+        subprocess.run(['git', 'clone', auth_repo_url, self.clone_dir], check=True)
+        return self
+
+    def reset_head_hard(self):
+        if self.reset_head == 'HARD':
+            subprocess.run(['git', 'reset', '--hard', 'HEAD~1'], cwd=self.clone_dir, check=True)
+        return self
+
+    def add(self, file_path):
+        subprocess.run(['git', 'add', file_path], cwd=self.repo_dir, check=True)
+        return self
+
+    def commit(self, commit_message = None):
+        if commit_message is None:
+            commit_message = self.commit_message
+        subprocess.run(['git', 'commit', '-m', commit_message], cwd=self.repo_dir, check=True)
+        return self
     
-    # Commit the changes
-    subprocess.run(['git', 'commit', '-m', commit_message], cwd=repo_dir, check=True)
+    def push(self):
+        push_command = ['git', 'push', f'https://{self.user_name}:{self.get_github_token()}@github.com/{self.repo_owner}/{self.repo_name}', 'main']
+        if self.reset_head == "HARD":
+            push_command.append('--force')
     
-    if reset_head == "HARD":
-        # Reset HEAD to the previous commit
-        subprocess.run(['git', 'reset', '--hard', 'HEAD~1'], cwd=repo_dir, check=True)
-    
-    # Push the changes (force push if reset_head is HARD)
-    push_command = ['git', 'push', f'https://{user_name}:{github_token}@github.com/{repo_owner}/{repo_name}', 'main']
-    if reset_head == "HARD":
-        push_command.append('--force')
-    
-    subprocess.run(push_command, cwd=repo_dir, check=True)
-
-def update_repo(config_path):
-    with open(config_path, 'r') as file:
-        config = yaml.safe_load(file)
-
-    github_token = os.getenv('GITHUB_TOKEN')
-    if not github_token:
-        raise ValueError("GitHub token is not set in environment variables.")
-
-    repo_url = config['repo_url']
-    clone_dir = config['clone_dir']
-    file_path = os.path.join(clone_dir, config['file_path'])
-    repo_owner = config['repo_owner']
-    repo_name = config['repo_name']
-    new_content = config['new_content']
-    commit_message = config['commit_message']
-    user_name = config['user_name']
-    user_email = config['user_email']
-    reset_head = config.get('reset_head', None)
-
-    # Clone the repository
-    clone_repo(repo_url, clone_dir, github_token, user_name, repo_owner, repo_name)
-    
-    # Add, commit, and push the change
-    git_add_commit_push(file_path, commit_message, clone_dir, github_token, user_name, user_email, repo_owner, repo_name, reset_head)
+        subprocess.run(push_command, cwd=self.repo_dir, check=True)
+        return self
 
 
-# Example usage: (uncomment to use directly or import in another script)
-# if __name__ == '__main__':
-#     update_repo('config.yaml')
