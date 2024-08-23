@@ -1,42 +1,37 @@
-import boto3
 import numpy as np
-import pandas as pd
+from pathlib import Path
 from washtimer import porssisahko as pool
 from washtimer.consumption import min_max_hours
 from washtimer.page_html import get_page_html
-import os
+from gitutil.gitutil import RepoUtil
 
+GITCONFIG = "git_repo_config.yaml"
 
 def lambda_handler(event, context):
 
-    # calculate cheapest hours
+    # Clone repo, reset head
+    repo = RepoUtil(config_path=GITCONFIG)
+    repo.clone().reset_head_hard()
+    clone_dir = repo.get_clone_dir()
 
+    # Calculate cheapest hours
     price_df = pool.request_latest_prices()
-
-    # currently only accounting for 3 hour programs based on user experience
-    power_hours = 3
-    df = min_max_hours(price_df, power_hours=[power_hours])
-    begin_hours = int(df[np.logical_and(df.power_hours==3, df.minmax == "min")].hours_to_start[0])
-    end_hours = begin_hours + power_hours
+    program = 3
+    df = min_max_hours(price_df, power_hours=[program])
+    begin_hours = int(df[np.logical_and(df.power_hours==program, df.minmax == "min")].hours_to_start[0])
+    end_hours = begin_hours + program
     
-    # format html page
-
+    # Format html page
     html_content = get_page_html(begin_hours, end_hours)
-    
-    # Specify the S3 bucket name and object key
-    bucket_name = os.getenv("BUCKET_NAME")
-    object_key = 'index.html'
+    html_path = Path().cwd() / clone_dir / "index.html"
+    with open(html_path, 'w') as f:
+        f.write(html_content)
 
-    # Initialize S3 client
-    s3 = boto3.client('s3')
+    # Add, commit, push
+    repo.add(html_path).commit().push()
 
-    # Upload the HTML content as a file to S3
-    s3.put_object(Bucket=bucket_name,
-                  Key=object_key,
-                  Body=html_content,
-                  ContentType='text/html',
-                  CacheControl = 'max-age=60'
-                )
+    # Remove local clone
+    repo.remove_clone()
 
     return {
         'statusCode': 200,
